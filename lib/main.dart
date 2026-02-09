@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:camera/camera.dart';
 import 'package:provider/provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'theme.dart';
@@ -18,6 +19,7 @@ import 'pages/chatbot/chatbot_page.dart';
 import 'pages/guide/behavior_guide_page.dart';
 import 'pages/analytics/analytics_page.dart';
 import 'pages/settings_page.dart';
+import 'pages/camera_page.dart';
 import 'pages/extras/calm_mode_page.dart';
 import 'pages/extras/breathing_exercise_page.dart';
 import 'providers/role_provider.dart';
@@ -27,11 +29,19 @@ import 'providers/chatbot_provider.dart';
 import 'providers/settings_provider.dart';
 import 'services/ml_service.dart';
 
+List<CameraDescription> cameras = [];
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // Initialize Hive for local storage
   await Hive.initFlutter();
+  
+  try {
+    cameras = await availableCameras();
+  } catch (e) {
+    print('Error initializing cameras: $e');
+  }
   
   // Initialize ML service
   final mlService = MLService();
@@ -66,6 +76,7 @@ class MyApp extends StatelessWidget {
           '/parent-dashboard': (_) => const ParentDashboard(),
           '/teacher-dashboard': (_) => const TeacherDashboard(),
           '/detect': (_) => const DetectPage(),
+          '/camera': (_) => const CameraPage(),
           '/results': (_) => const ResultsPage(),
           '/game-menu': (_) => const GameMenuPage(),
           '/face-game': (_) => const FaceEmotionGame(),

@@ -43,3 +43,24 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# VS Code
+.vscode/
+
+# Large model files
+assets/models/*.onnx
+assets/models/*.tflite
+blobs/
+
+# Temp and generated files
+temp_tflite/
+generated_data/
+*.zip
+analysis.txt
+run_log*.txt
+temp_manifest.json
+convert_model.py
+
+# Python
+__pycache__/
+*.py[cod]

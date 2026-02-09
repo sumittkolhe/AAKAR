@@ -76,7 +76,7 @@ class _EmotionBuddyState extends State<EmotionBuddy> with SingleTickerProviderSt
                   gradient: AppColors.warmGradient,
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.accentPeach.withAlpha(102),
+                      color: AppColors.primary.withOpacity(0.4),
                       blurRadius: 20,
                       spreadRadius: 5,
                     ),
@@ -94,11 +94,12 @@ class _EmotionBuddyState extends State<EmotionBuddy> with SingleTickerProviderSt
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.glassBorder),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withAlpha(20),
+                  color: Colors.black.withOpacity(0.2),
                   blurRadius: 15,
                   offset: const Offset(0, 5),
                 ),
@@ -110,7 +111,7 @@ class _EmotionBuddyState extends State<EmotionBuddy> with SingleTickerProviderSt
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textDark,
+                color: AppColors.textPrimary,
               ),
             ),
           ),
@@ -146,7 +147,7 @@ class GradientCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: (gradient?.colors.first ?? AppColors.primaryPurple).withAlpha(77),
+              color: (gradient?.colors.first ?? AppColors.primary).withOpacity(0.3),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -198,7 +199,7 @@ class PremiumButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primaryPurple.withAlpha(102),
+              color: AppColors.primary.withOpacity(0.4),
               blurRadius: 15,
               offset: const Offset(0, 6),
             ),
@@ -239,8 +240,9 @@ class XPProgressBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.glassBorder),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withAlpha(13),
@@ -293,7 +295,7 @@ class XPProgressBar extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(10),
               child: Container(
-                color: AppColors.backgroundLight,
+                color: AppColors.background,
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: FractionallySizedBox(

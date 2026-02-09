@@ -1,8 +1,10 @@
  import 'dart:math';
 
 class Emotions {
+  // FER-Plus 8-class emotions (matches the pre-trained model vicksam/fer-model)
+  // Order: Angry, Disgust, Fear, Happy, Sad, Surprise, Contempt, Neutral
   static const List<String> labels = [
-    'Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral'
+    'Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Contempt', 'Neutral'
   ];
 
   static const Map<String, String> emoji = {
@@ -12,6 +14,7 @@ class Emotions {
     'Happy': '😊',
     'Sad': '😢',
     'Surprise': '😲',
+    'Contempt': '😏',
     'Neutral': '😐',
   };
 
@@ -31,8 +34,10 @@ class Emotions {
 
   static Map<String, double> mockProbs({int? seed}) {
     final rand = Random(seed);
-    // Bias toward common emotions (Happy, Neutral, Surprise) for more realistic feel
-    final weights = [0.8, 0.5, 0.6, 2.5, 0.9, 1.2, 2.0]; // Angry, Disgust, Fear, Happy, Sad, Surprise, Neutral
+    // Weights corresponding to new label order:
+    // Angry, Disgust, Fear, Happy, Sad, Surprise, Contempt, Neutral
+    // Bias toward Neutral and Happy for general use
+    final weights = [0.5, 0.4, 0.4, 2.5, 0.6, 1.2, 0.3, 2.0];
     final values = List<double>.generate(labels.length, (i) => rand.nextDouble() * weights[i]);
     final sum = values.fold<double>(0, (a, b) => a + b);
     final probs = <String, double>{};

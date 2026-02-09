@@ -87,6 +87,11 @@ if(PLUGIN_BUNDLED_LIBRARIES)
     COMPONENT Runtime)
 endif()
 
+# TensorFlow Lite C library for tflite_flutter package
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../blobs/libtensorflowlite_c-win.dll"
+  DESTINATION "${INSTALL_BUNDLE_LIB_DIR}/blobs"
+  COMPONENT Runtime)
+
 # Copy the native assets provided by the build.dart from all packages.
 set(NATIVE_ASSETS_DIR "${PROJECT_BUILD_DIR}native_assets/windows/")
 install(DIRECTORY "${NATIVE_ASSETS_DIR}"

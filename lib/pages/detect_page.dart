@@ -1,12 +1,14 @@
- import 'dart:io';
+import 'dart:io';
 
- import 'package:file_picker/file_picker.dart';
- import 'package:flutter/material.dart';
- import 'package:image_picker/image_picker.dart';
- import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:animate_do/animate_do.dart';
 
- import '../shared/emotions.dart';
- import '../services/ml_service.dart';
+import '../shared/emotions.dart';
+import '../services/ml_service.dart';
+import '../theme.dart';
 
 class DetectPage extends StatefulWidget {
   const DetectPage({super.key});
@@ -20,8 +22,8 @@ class _DetectPageState extends State<DetectPage> {
   final MLService _mlService = MLService();
   XFile? _image;
   File? _audio;
-  XFile? _video;
   bool _isLoading = false;
+  int _selectedTab = 0;
 
   @override
   void initState() {
@@ -36,43 +38,56 @@ class _DetectPageState extends State<DetectPage> {
   }
 
   Future<void> _pickImage() async {
-    final XFile? picked = await _imagePicker.pickImage(source: ImageSource.gallery);
-    if (picked != null) {
-      setState(() => _image = picked);
+    // Use FilePicker with extension filter to only allow supported formats
+    // AVIF is not supported by the image package
+    final res = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'],
+    );
+    if (res != null && res.files.single.path != null) {
+      final path = res.files.single.path!;
+      final ext = path.split('.').last.toLowerCase();
+      
+      // Secondary validation - reject unsupported formats
+      const supportedFormats = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'];
+      if (!supportedFormats.contains(ext)) {
+        _snack('Unsupported format: .$ext\nPlease use JPG, PNG, WebP, GIF, or BMP');
+        return;
+      }
+      
+      setState(() => _image = XFile(path));
     }
   }
 
   Future<void> _captureImage() async {
-    final XFile? picked = await _imagePicker.pickImage(source: ImageSource.camera);
-    if (picked != null) {
-      setState(() => _image = picked);
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      // On desktop, launch our custom camera page
+      final result = await Navigator.pushNamed(context, '/camera');
+      if (result != null && result is XFile) {
+        setState(() => _image = result);
+      }
+    } else {
+      // On mobile, use standard image picker
+      final XFile? picked = await _imagePicker.pickImage(source: ImageSource.camera);
+      if (picked != null) {
+        setState(() => _image = picked);
+      }
     }
   }
 
   Future<void> _pickAudio() async {
-    final res = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['wav', 'mp3', 'ogg', 'm4a']);
+    final res = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['wav', 'mp3', 'ogg', 'm4a'],
+    );
     if (res != null && res.files.single.path != null) {
       setState(() => _audio = File(res.files.single.path!));
     }
   }
 
-  Future<void> _pickVideo() async {
-    final XFile? picked = await _imagePicker.pickVideo(source: ImageSource.gallery);
-    if (picked != null) {
-      setState(() => _video = picked);
-    }
-  }
-
-  Future<void> _captureVideo() async {
-    final XFile? picked = await _imagePicker.pickVideo(source: ImageSource.camera, maxDuration: const Duration(seconds: 30));
-    if (picked != null) {
-      setState(() => _video = picked);
-    }
-  }
-
   Future<void> _analyzeFace() async {
     if (_image == null) {
-      _snack('Please choose an image first');
+      _snack('Please select an image first');
       return;
     }
     setState(() => _isLoading = true);
@@ -84,7 +99,7 @@ class _DetectPageState extends State<DetectPage> {
           'finalLabel': label,
           'finalConf': probs[label],
           'emoji': Emotions.emoji[label],
-          'feedback': 'You look ${label.toLowerCase()}! 😊'
+          'feedback': 'You look ${label.toLowerCase()}! ${Emotions.emoji[label]}'
         });
       }
     } finally {
@@ -94,7 +109,7 @@ class _DetectPageState extends State<DetectPage> {
 
   Future<void> _analyzeVoice() async {
     if (_audio == null) {
-      _snack('Please choose an audio file first');
+      _snack('Please select an audio file first');
       return;
     }
     setState(() => _isLoading = true);
@@ -114,221 +129,362 @@ class _DetectPageState extends State<DetectPage> {
     }
   }
 
-  Future<void> _analyzeVideo() async {
-    if (_video == null) {
-      _snack('Please choose a video first');
-      return;
-    }
-    setState(() => _isLoading = true);
-    try {
-      // For video, we'll use face detection on first frame (simplified)
-      final probs = await _mlService.predictFace(_video!.path);
-      final label = Emotions.argMax(probs);
-      if (mounted) {
-        Navigator.pushNamed(context, '/results', arguments: {
-          'finalLabel': label,
-          'finalConf': probs[label],
-          'emoji': Emotions.emoji[label],
-          'feedback': 'Your video shows ${label.toLowerCase()} vibes! 🎥'
-        });
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _analyzeBoth() async {
-    if (_image == null || _audio == null) {
-      _snack('Pick both image and audio to analyze together');
-      return;
-    }
-    setState(() => _isLoading = true);
-    try {
-      final face = await _mlService.predictFace(_image!.path);
-      final voice = await _mlService.predictVoice(_audio!.path);
-      final combined = Emotions.combineWeighted(face, voice);
-      final label = Emotions.argMax(combined);
-      if (mounted) {
-        Navigator.pushNamed(context, '/results', arguments: {
-          'finalLabel': label,
-          'finalConf': combined[label],
-          'emoji': Emotions.emoji[label],
-          'feedback': 'You look and sound ${label.toLowerCase()}! 🎯'
-        });
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
   void _snack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: AppColors.surface,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Detect Emotion'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.glassBorder),
+            ),
+            child: const Icon(Icons.arrow_back, size: 20),
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.home),
-            tooltip: 'Home',
-            onPressed: () => Navigator.pushReplacementNamed(context, '/'),
+        title: const Text('Emotion Detection'),
+        centerTitle: true,
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: AppColors.darkGradient,
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 16),
+                
+                // Tab Selector
+                FadeInDown(
+                  duration: const Duration(milliseconds: 500),
+                  child: _buildTabSelector(),
+                ),
+                
+                const SizedBox(height: 24),
+                
+                // Content based on tab
+                if (_selectedTab == 0) ...[
+                  FadeInUp(
+                    duration: const Duration(milliseconds: 600),
+                    child: _buildImageSection(),
+                  ),
+                ] else ...[
+                  FadeInUp(
+                    duration: const Duration(milliseconds: 600),
+                    child: _buildAudioSection(),
+                  ),
+                ],
+                
+                const SizedBox(height: 32),
+                
+                // Analyze Button
+                if (_isLoading)
+                  _buildLoadingIndicator()
+                else
+                  FadeInUp(
+                    duration: const Duration(milliseconds: 700),
+                    child: _buildAnalyzeButton(),
+                  ),
+              ],
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.dashboard),
-            tooltip: 'Dashboard',
-            onPressed: () => Navigator.pushReplacementNamed(context, '/role-selection'),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabSelector() {
+    return Container(
+      height: 56,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.glassBorder),
+      ),
+      child: Row(
+        children: [
+          Expanded(child: _buildTab('📸 Face', 0)),
+          Expanded(child: _buildTab('🎵 Voice', 1)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTab(String label, int index) {
+    final isSelected = _selectedTab == index;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedTab = index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          gradient: isSelected ? AppColors.primaryGradient : null,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: isSelected ? Colors.white : AppColors.textMuted,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageSection() {
+    return GlassCard(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          // Preview Area
+          GestureDetector(
+            onTap: _pickImage,
+            child: Container(
+              height: 280,
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.glassBorder, width: 2),
+              ),
+              child: _image != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(18),
+                      child: Image.file(
+                        File(_image!.path),
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                      ),
+                    )
+                  : Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            gradient: AppColors.primaryGradient,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.add_a_photo, color: Colors.white, size: 40),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Tap to select an image',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'or use the buttons below',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textMuted.withOpacity(0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // Action Buttons
+          Row(
+            children: [
+              Expanded(
+                child: _buildActionButton(
+                  Icons.photo_library_outlined,
+                  'Gallery',
+                  _pickImage,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildActionButton(
+                  Icons.camera_alt_outlined,
+                  'Camera',
+                  _captureImage,
+                ),
+              ),
+            ],
           ),
         ],
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Face Image', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: _pickImage,
-                          icon: const Icon(Icons.photo, size: 20),
-                          label: const Text('Gallery'),
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: _captureImage,
-                          icon: const Icon(Icons.photo_camera, size: 20),
-                          label: const Text('Camera'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    if (_image != null)
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.file(
-                          File(_image!.path),
-                          height: 160,
-                          fit: BoxFit.cover,
-                        ),
-                      )
-                    else
-                      const Text('No image selected'),
-                  ],
-                ),
-              ),
+    );
+  }
+
+  Widget _buildAudioSection() {
+    return GlassCard(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          // Audio Preview
+          Container(
+            height: 200,
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.glassBorder, width: 2),
             ),
-            const SizedBox(height: 8),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Face Video', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: _pickVideo,
-                          icon: const Icon(Icons.video_library, size: 20),
-                          label: const Text('Gallery'),
+            child: _audio != null
+                ? Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          gradient: AppColors.mintGradient,
+                          shape: BoxShape.circle,
                         ),
-                        OutlinedButton.icon(
-                          onPressed: _captureVideo,
-                          icon: const Icon(Icons.videocam, size: 20),
-                          label: const Text('Record'),
+                        child: const Icon(Icons.audiotrack, color: Colors.white, size: 48),
+                      ),
+                      const SizedBox(height: 16),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Text(
+                          _audio!.path.split(Platform.pathSeparator).last,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textPrimary,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(_video != null ? File(_video!.path).path.split(Platform.pathSeparator).last : 'No video selected'),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Voice Audio', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 8),
-                    ElevatedButton.icon(
-                      onPressed: _pickAudio,
-                      icon: const Icon(Icons.audiotrack),
-                      label: const Text('Pick Audio'),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(_audio?.path.split(Platform.pathSeparator).last ?? 'No audio selected'),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (_isLoading)
-              Center(
-                child: Column(
-                  children: const [
-                    SpinKitFadingCircle(color: Color(0xFF5DADE2), size: 50),
-                    SizedBox(height: 12),
-                    Text('Analyzing emotions...', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                  ],
-                ),
-              )
-            else
-              Wrap(
-                spacing: 12,
-                runSpacing: 8,
-                alignment: WrapAlignment.center,
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: _analyzeFace,
-                    icon: const Icon(Icons.face, size: 20),
-                    label: const Text('Analyze Face'),
+                      ),
+                    ],
+                  )
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          gradient: AppColors.mintGradient,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.mic_none, color: Colors.white, size: 40),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Select an audio file',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                    ],
                   ),
-                  ElevatedButton.icon(
-                    onPressed: _analyzeVoice,
-                    icon: const Icon(Icons.mic, size: 20),
-                    label: const Text('Analyze Voice'),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: _analyzeVideo,
-                    icon: const Icon(Icons.videocam, size: 20),
-                    label: const Text('Analyze Video'),
-                  ),
-                  if (_image != null && _audio != null)
-                    ElevatedButton.icon(
-                      onPressed: _analyzeBoth,
-                      icon: const Icon(Icons.analytics, size: 20),
-                      label: const Text('Analyze Both'),
-                    ),
-                ],
-              ),
-            const SizedBox(height: 16),
-          ],
           ),
+          
+          const SizedBox(height: 20),
+          
+          // Audio Button
+          _buildActionButton(
+            Icons.folder_outlined,
+            'Choose Audio File',
+            _pickAudio,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton(IconData icon, String label, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 56,
+        decoration: BoxDecoration(
+          color: AppColors.surfaceLight,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.glassBorder),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: AppColors.textSecondary, size: 22),
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _buildLoadingIndicator() {
+    return FadeIn(
+      child: Container(
+        height: 120,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.glassBorder),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SpinKitRipple(
+              color: AppColors.primary,
+              size: 60,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Analyzing your emotion...',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAnalyzeButton() {
+    final hasInput = _selectedTab == 0 ? _image != null : _audio != null;
+    
+    return GradientButton(
+      label: _selectedTab == 0 ? 'Analyze Face' : 'Analyze Voice',
+      icon: _selectedTab == 0 ? Icons.face_retouching_natural : Icons.graphic_eq,
+      onPressed: hasInput
+          ? (_selectedTab == 0 ? _analyzeFace : _analyzeVoice)
+          : () => _snack('Please select ${_selectedTab == 0 ? 'an image' : 'an audio file'} first'),
+      gradient: hasInput ? AppColors.primaryGradient : null,
     );
   }
 }
