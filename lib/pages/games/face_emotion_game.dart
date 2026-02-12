@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'dart:math';
-import '../../shared/emotions.dart';
+import '../../theme.dart';
 import '../../providers/game_provider.dart';
 import '../../models/game_score.dart';
+import '../../widgets/aakar_widgets.dart';
 import 'package:uuid/uuid.dart';
 
 class FaceEmotionGame extends StatefulWidget {
@@ -31,12 +33,14 @@ class _FaceEmotionGameState extends State<FaceEmotionGame> {
 
   void _generateQuestion() {
     final random = Random();
-    _currentEmotion = Emotions.labels[random.nextInt(Emotions.labels.length)];
+    // Use emotions from EmotionTheme to ensure consistency
+    final allEmotions = ['Happy', 'Sad', 'Angry', 'Fear', 'Surprise', 'Neutral'];
+    _currentEmotion = allEmotions[random.nextInt(allEmotions.length)];
     
     // Generate 4 options including correct answer
     _options = [_currentEmotion];
     while (_options.length < 4) {
-      final option = Emotions.labels[random.nextInt(Emotions.labels.length)];
+      final option = allEmotions[random.nextInt(allEmotions.length)];
       if (!_options.contains(option)) {
         _options.add(option);
       }
@@ -88,80 +92,104 @@ class _FaceEmotionGameState extends State<FaceEmotionGame> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Column(
-          children: [
-            Text(
-              _correctAnswers >= 4 ? '🎉' : _correctAnswers >= 2 ? '👍' : '💪',
-              style: const TextStyle(fontSize: 60),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              _correctAnswers >= 4 ? 'Amazing!' : _correctAnswers >= 2 ? 'Good Job!' : 'Keep Trying!',
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF7C4DFF),
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: GlassCard(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _correctAnswers >= 4 ? '🎉' : _correctAnswers >= 2 ? '👍' : '💪',
+                style: const TextStyle(fontSize: 60),
               ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'You got $_correctAnswers out of $_totalQuestions correct!',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 18),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFEB3B).withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
+              const SizedBox(height: 16),
+              Text(
+                _correctAnswers >= 4 ? 'Amazing!' : _correctAnswers >= 2 ? 'Good Job!' : 'Keep Trying!',
+                style: GoogleFonts.outfit(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+                textAlign: TextAlign.center,
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              const SizedBox(height: 12),
+              Text(
+                'You got $_correctAnswers out of $_totalQuestions correct!',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.gold.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('⭐', style: TextStyle(fontSize: 24)),
+                    const SizedBox(width: 8),
+                    Text(
+                      '+$xpEarned XP',
+                      style: GoogleFonts.outfit(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.gold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+              Row(
                 children: [
-                  const Text('⭐', style: TextStyle(fontSize: 24)),
-                  const SizedBox(width: 8),
-                  Text(
-                    '+$xpEarned XP',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFFFF9800),
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.pop(context); // Close dialog
+                        Navigator.pop(context); // Back to menu
+                      },
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: Text(
+                        'Back to Menu',
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: GradientButton(
+                      label: 'Play Again',
+                      gradient: AppColors.primaryGradient,
+                      onPressed: () {
+                        Navigator.pop(context);
+                        setState(() {
+                          _currentQuestion = 0;
+                          _correctAnswers = 0;
+                          _answered = false;
+                          _selectedAnswer = null;
+                          _generateQuestion();
+                        });
+                      },
                     ),
                   ),
                 ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: const Text('Back to Menu'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() {
-                _currentQuestion = 0;
-                _correctAnswers = 0;
-                _answered = false;
-                _selectedAnswer = null;
-                _generateQuestion();
-              });
-            },
-            child: const Text('Play Again'),
-          ),
-        ],
       ),
     );
   }
@@ -169,117 +197,197 @@ class _FaceEmotionGameState extends State<FaceEmotionGame> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Face Emotion Game'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              border: Border.all(color: AppColors.glassBorder),
+            ),
+            child: const Icon(Icons.arrow_back_rounded, size: 20),
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Face Emotion Game',
+          style: GoogleFonts.outfit(fontWeight: FontWeight.w700),
+        ),
+        centerTitle: true,
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: Center(
-              child: Text(
-                '${_currentQuestion + 1}/$_totalQuestions',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              border: Border.all(color: AppColors.glassBorder),
+            ),
+            child: Text(
+              '${_currentQuestion + 1}/$_totalQuestions',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
               ),
             ),
           ),
         ],
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              // Progress bar
-              FadeInDown(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: LinearProgressIndicator(
-                    value: (_currentQuestion + 1) / _totalQuestions,
-                    minHeight: 12,
-                    backgroundColor: Colors.grey[300],
-                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 40),
-
-              // Question
-              FadeIn(
-                child: const Text(
-                  'Which emotion is this?',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 30),
-
-              // Emoji
-              ZoomIn(
-                child: Container(
-                  width: 200,
-                  height: 200,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF7C4DFF).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  child: Center(
-                    child: Text(
-                      Emotions.getEmoji(_currentEmotion),
-                      style: const TextStyle(fontSize: 120),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: AppColors.darkGradient,
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                // Progress bar
+                FadeInDown(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    child: LinearProgressIndicator(
+                      value: (_currentQuestion + 1) / _totalQuestions,
+                      minHeight: 8,
+                      backgroundColor: AppColors.surfaceLight,
+                      valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 40),
+                const SizedBox(height: 40),
 
-              // Options
-              Expanded(
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  children: _options.map((option) {
-                    final isCorrect = option == _currentEmotion;
-                    final isSelected = option == _selectedAnswer;
-                    
-                    Color getColor() {
-                      if (!_answered) return const Color(0xFF7C4DFF);
-                      if (isSelected && isCorrect) return const Color(0xFF4CAF50);
-                      if (isSelected && !isCorrect) return const Color(0xFFF44336);
-                      if (isCorrect) return const Color(0xFF4CAF50);
-                      return Colors.grey;
-                    }
-
-                    return BounceInUp(
-                      delay: Duration(milliseconds: 100 * _options.indexOf(option)),
-                      child: ElevatedButton(
-                        onPressed: _answered ? null : () => _checkAnswer(option),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: getColor(),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          padding: const EdgeInsets.all(20),
-                        ),
+                // Question Area
+                Expanded(
+                  flex: 4,
+                  child: Column(
+                    children: [
+                      FadeIn(
                         child: Text(
-                          option,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                          'Which emotion is this?',
+                          style: GoogleFonts.outfit(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
-                    );
-                  }).toList(),
+                      const SizedBox(height: 30),
+
+                      // Emoji Display
+                      ZoomIn(
+                        key: ValueKey(_currentQuestion), // Animate on change
+                        child: Container(
+                          width: 160,
+                          height: 160,
+                          decoration: BoxDecoration(
+                            gradient: RadialGradient(
+                              colors: [
+                                EmotionTheme.color(_currentEmotion).withValues(alpha: 0.3),
+                                Colors.transparent,
+                              ],
+                              radius: 0.7,
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              EmotionTheme.emoji(_currentEmotion),
+                              style: const TextStyle(fontSize: 100),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+
+                // Options Grid
+                Expanded(
+                  flex: 5,
+                  child: GridView.builder(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 16,
+                      childAspectRatio: 1.3,
+                    ),
+                    itemCount: _options.length,
+                    itemBuilder: (context, index) {
+                      final option = _options[index];
+                      final isCorrect = option == _currentEmotion;
+                      final isSelected = option == _selectedAnswer;
+                      
+                      Color? backgroundColor;
+                      Color? borderColor;
+                      
+                      if (_answered) {
+                        if (isCorrect) {
+                          backgroundColor = const Color(0xFF4CAF50).withValues(alpha: 0.2);
+                          borderColor = const Color(0xFF4CAF50);
+                        } else if (isSelected) {
+                          backgroundColor = const Color(0xFFF44336).withValues(alpha: 0.2);
+                          borderColor = const Color(0xFFF44336);
+                        } else {
+                          backgroundColor = AppColors.surfaceLight;
+                          borderColor = Colors.transparent;
+                        }
+                      } else {
+                        backgroundColor = AppColors.surface;
+                        borderColor = AppColors.glassBorder;
+                      }
+
+                      return BounceInUp(
+                        delay: Duration(milliseconds: 100 * index),
+                        child: GestureDetector(
+                          onTap: _answered ? null : () => _checkAnswer(option),
+                          child: AnimatedContainer(
+                            duration: AppAnimations.fast,
+                            decoration: BoxDecoration(
+                              color: backgroundColor,
+                              borderRadius: BorderRadius.circular(AppRadius.card),
+                              border: Border.all(
+                                color: borderColor ?? Colors.transparent,
+                                width: 2,
+                              ),
+                              boxShadow: [
+                                if (!_answered)
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.2),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  EmotionTheme.emoji(option),
+                                  style: const TextStyle(fontSize: 32),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  option,
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

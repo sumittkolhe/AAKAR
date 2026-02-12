@@ -30,7 +30,8 @@ class MLService {
     // Try loading the new AffectNet model first (better trained)
     try {
       final modelFile = await _getAssetFile('assets/models/affectnet_model.onnx');
-      _faceSession = OrtSession.fromFile(modelFile.path);
+      final sessionOptions = OrtSessionOptions();
+      _faceSession = OrtSession.fromFile(modelFile, sessionOptions);
       _modelType = 'affectnet';
       print('✅ AffectNet ONNX model loaded');
     } catch (e) {
@@ -110,7 +111,7 @@ class MLService {
     
     final inputs = {'input_1': inputOrt};
     
-    final List<OrtValue?> outputs;
+    List<OrtValue?> outputs;
     try {
         outputs = _faceSession!.run(runOptions, inputs);
     } catch (e) {
@@ -232,6 +233,18 @@ class MLService {
       i++;
     }
     return result;
+  }
+
+  /// Predict voice emotion (placeholder - uses mock for now since voice model is not available)
+  Future<Map<String, double>> predictVoice(String audioPath) async {
+    if (_voiceInterpreter == null) {
+      print('⚠️ Voice model not loaded, using mock');
+      return Emotions.mockProbs(seed: Emotions.seedFromString(audioPath));
+    }
+    
+    // TODO: Implement actual voice prediction when model is ready
+    // For now, return mock predictions
+    return Emotions.mockProbs(seed: Emotions.seedFromString(audioPath));
   }
 
   void dispose() {

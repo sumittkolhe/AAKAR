@@ -23,6 +23,15 @@ class GameProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void addXP(int amount) {
+    _totalXP += amount;
+    _updateDailyStreak();
+    _checkBadgeUnlocks();
+    notifyListeners();
+  }
+
+
+
   void loadData({
     required int totalXP,
     required int dailyStreak,
@@ -128,5 +137,12 @@ class GameProvider with ChangeNotifier {
     if (_scores.isEmpty) return 0;
     final total = _scores.fold<double>(0, (sum, score) => sum + score.accuracy);
     return total / _scores.length;
+  }
+
+  int highScore(String gameType) {
+    if (_scores.isEmpty) return 0;
+    final gameScores = _scores.where((s) => s.gameType == gameType);
+    if (gameScores.isEmpty) return 0;
+    return gameScores.map((s) => s.score).reduce((a, b) => a > b ? a : b);
   }
 }
