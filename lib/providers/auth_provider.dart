@@ -40,70 +40,77 @@ class AuthProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     
-    // Simulate API delay
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      // Simulate API delay
+      await Future.delayed(const Duration(seconds: 1));
 
-    // MOCK LOGIN
-    _currentUser = ChildUser(
-      id: _uuid.v4(),
-      name: name,
-      email: '${name.toLowerCase()}@aakar.com',
-      parentId: parentId,
-      age: 8,
-      totalXP: 120,
-      streaks: 3,
-    );
+      // MOCK LOGIN
+      _currentUser = ChildUser(
+        id: _uuid.v4(),
+        name: name,
+        email: '${name.toLowerCase()}@aakar.com',
+        parentId: parentId,
+        age: 8,
+        totalXP: 120,
+        streaks: 3,
+      );
 
-    await _saveUserToPrefs();
-    _isLoading = false;
-    notifyListeners();
+      await _saveUserToPrefs();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> loginAsParent(String email, String password) async {
     _isLoading = true;
     notifyListeners();
 
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      await Future.delayed(const Duration(seconds: 1));
 
-    // MOCK LOGIN
-    // In a real app, validate password here.
-    if (password == 'password') {
-       _currentUser = ParentUser(
-        id: _uuid.v4(),
-        name: "Parent User",
-        email: email,
-        childIds: ['child_1_mock'], // Mock child ID
-      );
-      await _saveUserToPrefs();
-    } else {
-      throw Exception('Invalid password');
+      // MOCK LOGIN
+      // In a real app, validate password here.
+      if (password == 'password') {
+         _currentUser = ParentUser(
+          id: _uuid.v4(),
+          name: "Parent User",
+          email: email,
+          childIds: ['child_1_mock'], // Mock child ID
+        );
+        await _saveUserToPrefs();
+      } else {
+        throw Exception('Invalid password');
+      }
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
-    
-    _isLoading = false;
-    notifyListeners();
   }
 
   Future<void> loginAsTherapist(String email, String password) async {
     _isLoading = true;
     notifyListeners();
 
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      await Future.delayed(const Duration(seconds: 1));
 
-    if (password == 'password') {
-      _currentUser = TherapistUser(
-        id: _uuid.v4(),
-        name: "Dr. Therapist",
-        email: email,
-        assignedChildIds: ['child_1_mock', 'child_2_mock'],
-        clinicName: "Happy Minds Clinic",
-      );
-      await _saveUserToPrefs();
-    } else {
-      throw Exception('Invalid password');
+      if (password == 'password') {
+        _currentUser = TherapistUser(
+          id: _uuid.v4(),
+          name: "Dr. Therapist",
+          email: email,
+          assignedChildIds: ['child_1_mock', 'child_2_mock'],
+          clinicName: "Happy Minds Clinic",
+        );
+        await _saveUserToPrefs();
+      } else {
+        throw Exception('Invalid password');
+      }
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
-
-    _isLoading = false;
-    notifyListeners();
   }
 
   Future<void> logout() async {
