@@ -52,6 +52,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   void _onNavTap(int index) {
+    if (index == 4) {
+      _showMoreMenu();
+      return;
+    }
     if (index == _navIndex) return;
     switch (index) {
       case 0:
@@ -83,27 +87,55 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         ),
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Handle bar
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceLight,
-                  borderRadius: BorderRadius.circular(2),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle bar
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceLight,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              _buildMenuItem(Icons.analytics_outlined, 'Analytics', AppColors.tealGradient, '/analytics'),
-              _buildMenuItem(Icons.self_improvement, 'Calm Tools', AppColors.calmGradient, '/calm-mode'),
-              _buildMenuItem(Icons.emoji_events_rounded, 'Rewards', AppColors.goldGradient, '/rewards'),
-              _buildMenuItem(Icons.people_outline_rounded, 'Switch Role', AppColors.mintGradient, '/role-selection'),
-              _buildMenuItem(Icons.settings_outlined, 'Settings', AppColors.purpleGradient, '/settings'),
-              _buildMenuItem(Icons.info_outline_rounded, 'About', AppColors.tealGradient, '/about'),
-              const SizedBox(height: 16),
-            ],
+                const SizedBox(height: 24),
+                _buildMenuItem(Icons.analytics_outlined, 'Analytics', AppColors.tealGradient, '/analytics'),
+                _buildMenuItem(Icons.self_improvement, 'Calm Tools', AppColors.calmGradient, '/calm-mode'),
+                _buildMenuItem(Icons.emoji_events_rounded, 'Rewards', AppColors.goldGradient, '/rewards'),
+                _buildMenuItem(Icons.people_outline_rounded, 'Switch Role', AppColors.mintGradient, '/role-selection'),
+                _buildMenuItem(Icons.settings_outlined, 'Settings', AppColors.purpleGradient, '/settings'),
+                _buildMenuItem(Icons.info_outline_rounded, 'About', AppColors.tealGradient, '/about'),
+                const SizedBox(height: 8),
+                ListTile(
+                  leading: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                    child: const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 20),
+                  ),
+                  title: Text(
+                    'Logout',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.redAccent,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.read<AuthProvider>().logout();
+                    Navigator.pushReplacementNamed(context, '/role-selection');
+                  },
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
         ),
       ),
