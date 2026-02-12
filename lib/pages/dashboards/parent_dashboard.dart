@@ -127,6 +127,21 @@ class ParentDashboard extends StatelessWidget {
                   route: '/chatbot',
                 ),
               ),
+              const SizedBox(height: 12),
+              FadeInUp(
+                delay: const Duration(milliseconds: 600),
+                child: _buildActionButton(
+                  context,
+                  icon: Icons.logout,
+                  title: 'Logout',
+                  subtitle: 'Sign out of your account',
+                  color: Colors.redAccent,
+                  onTap: () {
+                    context.read<AuthProvider>().logout();
+                    Navigator.pushNamedAndRemoveUntil(context, '/role-selection', (route) => false);
+                  },
+                ),
+              ),
               const SizedBox(height: 30),
 
               // Emergency Calming Tips
@@ -354,10 +369,13 @@ class ParentDashboard extends StatelessWidget {
     required IconData icon,
     required String title,
     required String subtitle,
-    required String route,
+    String? route,
+    VoidCallback? onTap,
+    Color? color,
   }) {
+    final themeColor = color ?? const Color(0xFF7C4DFF);
     return InkWell(
-      onTap: () => Navigator.pushNamed(context, route),
+      onTap: onTap ?? () => Navigator.pushNamed(context, route!),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -376,10 +394,10 @@ class ParentDashboard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF7C4DFF).withOpacity(0.1),
+                color: themeColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: const Color(0xFF7C4DFF), size: 28),
+              child: Icon(icon, color: themeColor, size: 28),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -404,7 +422,7 @@ class ParentDashboard extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+            Icon(Icons.arrow_forward_ios, size: 16, color: themeColor.withOpacity(0.5)),
           ],
         ),
       ),

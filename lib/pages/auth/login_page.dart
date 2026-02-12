@@ -140,10 +140,11 @@ class _LoginPageState extends State<LoginPage> {
                                 icon: Icons.person_rounded,
                               ),
                               const SizedBox(height: 16),
-                              _buildTextField(
+                               _buildTextField(
                                 controller: _parentIdController,
                                 label: "Parent Code (Optional for mock)", // In real app, strict linking
                                 icon: Icons.qr_code_rounded,
+                                isOptional: true,
                               ),
                               const SizedBox(height: 8),
                               const Text(
@@ -203,6 +204,7 @@ class _LoginPageState extends State<LoginPage> {
     required String label,
     required IconData icon,
     bool isPassword = false,
+    bool isOptional = false,
     TextInputType? keyboardType,
   }) {
     return TextFormField(
@@ -210,9 +212,12 @@ class _LoginPageState extends State<LoginPage> {
       obscureText: isPassword && !_isPasswordVisible,
       keyboardType: keyboardType,
       style: GoogleFonts.inter(color: Colors.white),
-      validator: (value) => value == null || value.isEmpty ? "Required" : null,
+      validator: (value) {
+        if (isOptional) return null;
+        return value == null || value.isEmpty ? "Required" : null;
+      },
       decoration: InputDecoration(
-        labelText: label, // Changed from labelText to label: Text() usually, but labelText works
+        labelText: label,
         labelStyle: GoogleFonts.inter(color: Colors.white70),
         prefixIcon: Icon(icon, color: Colors.white70),
         suffixIcon: isPassword
@@ -229,7 +234,7 @@ class _LoginPageState extends State<LoginPage> {
               )
             : null,
         filled: true,
-        fillColor: const Color(0xFF1E293B).withValues(alpha: 0.5), // Slate-800 equivalent
+        fillColor: const Color(0xFF1E293B).withValues(alpha: 0.5),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
