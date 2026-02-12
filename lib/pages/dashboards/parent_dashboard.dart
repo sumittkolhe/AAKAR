@@ -16,6 +16,13 @@ class ParentDashboard extends StatelessWidget {
         title: const Text('Parent Dashboard'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () {
+              context.read<AuthProvider>().logout();
+              Navigator.pushReplacementNamed(context, '/role-selection');
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () => Navigator.pushNamed(context, '/settings'),
           ),

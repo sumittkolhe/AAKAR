@@ -96,6 +96,20 @@ class SettingsPage extends StatelessWidget {
             subtitle: const Text('1.0.0'),
             leading: const Icon(Icons.app_settings_alt),
           ),
+          
+          const Divider(height: 32),
+          
+          ListTile(
+            title: const Text(
+              'Logout',
+              style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+            ),
+            leading: const Icon(Icons.logout, color: Colors.redAccent),
+            onTap: () {
+              context.read<AuthProvider>().logout();
+              Navigator.pushNamedAndRemoveUntil(context, '/role-selection', (route) => false);
+            },
+          ),
         ],
       ),
     );
