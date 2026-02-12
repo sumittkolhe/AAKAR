@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:animate_do/animate_do.dart';
 import '../../providers/emotion_history_provider.dart';
+import '../../providers/auth_provider.dart';
 
 class ParentDashboard extends StatelessWidget {
   const ParentDashboard({super.key});
